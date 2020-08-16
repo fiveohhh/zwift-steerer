@@ -15,6 +15,7 @@ from ble import (
     find_adapter,
     Descriptor,
     Agent,
+    GATT_CHRC_IFACE
 )
 
 import struct
@@ -95,8 +96,10 @@ class SteererService(Service):
         self.add_characteristic(Unknown2Characteristic(bus, 1, self))
         self.add_characteristic(Unknown3Characteristic(bus, 2, self))
         self.add_characteristic(Unknown4Characteristic(bus, 3, self))
-        self.add_characteristic(Unknown5Characteristic(bus, 4, self))
-        self.add_characteristic(Unknown6Characteristic(bus, 5, self))
+        
+        tx = TxCharacteristic(bus, 5, self)
+        self.add_characteristic(tx)
+        self.add_characteristic(RxCharacteristic(bus, 4, self, tx))
         self.add_characteristic(SteererCharacteristic(bus, 6, self))
 
 
@@ -196,9 +199,9 @@ class SteererCharacteristic(Characteristic):
     def StopNotify(self):
         logger.info("Disabling notifications steerer")
 
-class Unknown5Characteristic(Characteristic):
+class RxCharacteristic(Characteristic):
     uuid = "347b0031-7635-408b-8918-8ff3949ce592"
-    description = b"Handshaking thing?"
+    description = b"RX"
     # Zwift writes 0x0310 to here and that causes the Sterzo to emit an indication of
     # 0x0310xxxx on characteristic 0x0032 where xxxx is some random value
     # Zwift than writes 0x0311yyyy back to this characteristic
@@ -206,20 +209,32 @@ class Unknown5Characteristic(Characteristic):
     # The sterzo then starts emitting steering info on characteristic 0x0030
     # Zwift than writes 0x0202 to 0x0031 <- data has already started flowing at this point
 
-    def __init__(self, bus, index, service):
+    def __init__(self, bus, index, service, tx):
         Characteristic.__init__(
             self, bus, index, self.uuid, ["write"], service,
         )
-
+        self.tx = tx
         self.value = [0xFF]
         self.add_descriptor(CharacteristicUserDescriptionDescriptor(bus, 1, self))
+        self.service = service
 
     def WriteValue(self, value, options):
         logger.debug("Unknown 5 Write: " + repr(value))
-        self.value = value
-class Unknown6Characteristic(Characteristic):
+        logger.info(value[0])
+        # TODO: get the tx characteristic with this self.service.characteristics[0]
+        try:
+            if (value[0] == 0x03 and value[1] == 0x10):
+                logger.info('got it')
+                self.tx.PropertiesChanged(
+                GATT_CHRC_IFACE,
+                { 'Value': dbus.ByteArray([0x03,0x10,0x12,0x34]) }, [])
+                # challenge send
+        except Exception as e:
+            logger.error(e)
+
+class TxCharacteristic(Characteristic):
     uuid = "347b0032-7635-408b-8918-8ff3949ce592"
-    description = b"indicate other side of handshake"
+    description = b"TX"
 
 
     def __init__(self, bus, index, service):
@@ -336,10 +351,11 @@ def main():
     )
 
 
-
-    mainloop.run()
-    # ad_manager.UnregisterAdvertisement(advertisement)
-    # dbus.service.Object.remove_from_connection(advertisement)
+    try:
+        mainloop.run()
+    except:
+        ad_manager.UnregisterAdvertisement(advertisement)
+        dbus.service.Object.remove_from_connection(advertisement)
 
 
 if __name__ == "__main__":
