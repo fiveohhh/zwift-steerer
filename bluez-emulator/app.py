@@ -18,7 +18,6 @@ from ble import (
 )
 
 import struct
-import requests
 import array
 from enum import Enum
 
@@ -91,26 +90,57 @@ class SteererService(Service):
     SVC_UUID = "347b0001-7635-408b-8918-8ff3949ce592"
 
     def __init__(self, bus, index):
-        Service.__init__(self, bus, index, self.ESPRESSO_SVC_UUID, True)
-        self.add_characteristic(PowerControlCharacteristic(bus, 0, self))
-        self.add_characteristic(BoilerControlCharacteristic(bus, 1, self))
-        self.add_characteristic(AutoOffCharacteristic(bus, 2, self))
+        Service.__init__(self, bus, index, self.SVC_UUID, True)
+        self.add_characteristic(Unknown1Characteristic(bus, 0, self))
+        self.add_characteristic(Unknown2Characteristic(bus, 1, self))
+        self.add_characteristic(Unknown3Characteristic(bus, 2, self))
+        self.add_characteristic(Unknown4Characteristic(bus, 3, self))
+        self.add_characteristic(Unknown5Characteristic(bus, 4, self))
+        self.add_characteristic(Unknown6Characteristic(bus, 5, self))
+        self.add_characteristic(SteererCharacteristic(bus, 6, self))
 
 
-class SteerValsCharacteristic(Characteristic):
-    uuid = "347b0030-7635-408b-8918-8ff3949ce592"
+
+class Unknown1Characteristic(Characteristic):
+    uuid = "347b0012-7635-408b-8918-8ff3949ce592"
     description = b"Get/set machine power state {'ON', 'OFF', 'UNKNOWN'}"
 
-    class State(Enum):
-        on = "ON"
-        off = "OFF"
-        unknown = "UNKNOWN"
 
-        @classmethod
-        def has_value(cls, value):
-            return value in cls._value2member_map_
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+            self, bus, index, self.uuid, ["write"], service,
+        )
 
-    power_options = {"ON", "OFF", "UNKNOWN"}
+        self.value = [0xFF]
+        self.add_descriptor(CharacteristicUserDescriptionDescriptor(bus, 1, self))
+
+
+    def WriteValue(self, value, options):
+        logger.debug("Write to unknown1: " + repr(value))
+        self.value = value
+
+class Unknown2Characteristic(Characteristic):
+    uuid = "347b0013-7635-408b-8918-8ff3949ce592"
+    description = b"Unknown"
+
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+            self, bus, index, self.uuid, ["read"], service,
+        )
+
+        self.value = [0xFF]
+        self.add_descriptor(CharacteristicUserDescriptionDescriptor(bus, 1, self))
+
+    def ReadValue(self, options):
+        logger.debug("Read from unknown2: " + repr(self.value))
+        return self.value
+
+
+class Unknown3Characteristic(Characteristic):
+    uuid = "347b0014-7635-408b-8918-8ff3949ce592"
+    description = b"Unknown"
+
 
     def __init__(self, bus, index, service):
         Characteristic.__init__(
@@ -121,11 +151,91 @@ class SteerValsCharacteristic(Characteristic):
         self.add_descriptor(CharacteristicUserDescriptionDescriptor(bus, 1, self))
 
     def StartNotify(self):
-        logger.info("Enabling notifications")
+        logger.info("Enabling notifications unknown3")
         
 
     def StopNotify(self):
-        logger.info("Disabling notifications")
+        logger.info("Disabling notifications unknown3")
+
+class Unknown4Characteristic(Characteristic):
+    uuid = "347b0019-7635-408b-8918-8ff3949ce592"
+    description = b"Unknown"
+
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+            self, bus, index, self.uuid, ["read"], service,
+        )
+
+        self.value = [0xFF]
+        self.add_descriptor(CharacteristicUserDescriptionDescriptor(bus, 1, self))
+
+    def ReadValue(self, options):
+        logger.debug("Unknown4 Read: " + repr(self.value))
+        return self.value
+
+
+
+class SteererCharacteristic(Characteristic):
+    uuid = "347b0030-7635-408b-8918-8ff3949ce592"
+    description = b"notifications for steering angle"
+
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+            self, bus, index, self.uuid, ["notify"], service,
+        )
+
+        self.value = [0xFF]
+        self.add_descriptor(CharacteristicUserDescriptionDescriptor(bus, 1, self))
+
+    def StartNotify(self):
+        logger.info("Enabling notifications steerer")
+        
+
+    def StopNotify(self):
+        logger.info("Disabling notifications steerer")
+
+class Unknown5Characteristic(Characteristic):
+    uuid = "347b0031-7635-408b-8918-8ff3949ce592"
+    description = b"Handshaking thing?"
+    # Zwift writes 0x0310 to here and that causes the Sterzo to emit an indication of
+    # 0x0310xxxx on characteristic 0x0032 where xxxx is some random value
+    # Zwift than writes 0x0311yyyy back to this characteristic
+    # which than causes the Sterzo to emit 0x0311ff on characteristic 0x0032
+    # The sterzo then starts emitting steering info on characteristic 0x0030
+    # Zwift than writes 0x0202 to 0x0031 <- data has already started flowing at this point
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+            self, bus, index, self.uuid, ["write"], service,
+        )
+
+        self.value = [0xFF]
+        self.add_descriptor(CharacteristicUserDescriptionDescriptor(bus, 1, self))
+
+    def WriteValue(self, value, options):
+        logger.debug("Unknown 5 Write: " + repr(value))
+        self.value = value
+class Unknown6Characteristic(Characteristic):
+    uuid = "347b0032-7635-408b-8918-8ff3949ce592"
+    description = b"indicate other side of handshake"
+
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+            self, bus, index, self.uuid, ["indicate"], service,
+        )
+
+        self.value = [0xFF]
+        self.add_descriptor(CharacteristicUserDescriptionDescriptor(bus, 1, self))
+
+    def StartNotify(self):
+        logger.info("Enabling indications unknown6")
+        
+
+    def StopNotify(self):
+        logger.info("Disabling indications unknown6")
 
 
 
