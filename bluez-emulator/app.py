@@ -229,16 +229,21 @@ class RxCharacteristic(Characteristic):
 
     def WriteValue(self, value, options):
         try:
-            logger.debug("Tx Write: " + repr(value))
-            logger.info(value[0])
+            logger.debug("Rx Write: " + repr(value))
             # TODO: get the tx characteristic with this self.service.characteristics[0]
         
-            if (value[0] == 0x10 and value[1] == 0x30):
+            if (value[0] == 0x03 and value[1] == 0x10):
                 logger.info('got it')
                 self.tx.PropertiesChanged(
                 GATT_CHRC_IFACE,
-                { 'Value': dbus.ByteArray([0x03,0x10,0x12,0x34]) }, [])
+                { 'Value': dbus.ByteArray([0x03,0x10,0x4a, 0x89]) }, [])
                 # challenge send
+            elif (value[0] == 0x03 and value[1] == 0x11):
+                logger.info('received 0x0311')
+                self.tx.PropertiesChanged(
+                GATT_CHRC_IFACE,
+                { 'Value': dbus.ByteArray([0x03,0x11,0xff, 0xff]) }, [])
+                0x0311ff
         except Exception as e:
             logger.error(e)
 
