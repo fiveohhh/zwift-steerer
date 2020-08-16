@@ -151,7 +151,7 @@ class Unknown3Characteristic(Characteristic):
         )
 
         self.value = [0xFF]
-        self.add_descriptor(CharacteristicUserDescriptionDescriptor(bus, 1, self))
+        self.add_descriptor( CharacteristicUserDescriptionDescriptor(bus, 1, self))
 
     def StartNotify(self):
         logger.info("Enabling notifications unknown3")
@@ -177,8 +177,16 @@ class Unknown4Characteristic(Characteristic):
         logger.debug("Unknown4 Read: " + repr(self.value))
         return self.value
 
-
-
+def sendUpdate(chara):
+    print("sending")
+    try:
+        chara.PropertiesChanged(
+                    GATT_CHRC_IFACE,
+                    { 'Value': dbus.ByteArray([0x00,0xa4,0x0a,0x3f]) }, [])
+        GLib.timeout_add_seconds(1, sendUpdate, chara)
+    except Exception as e:
+        print(e)
+        
 class SteererCharacteristic(Characteristic):
     uuid = "347b0030-7635-408b-8918-8ff3949ce592"
     description = b"notifications for steering angle"
@@ -194,6 +202,7 @@ class SteererCharacteristic(Characteristic):
 
     def StartNotify(self):
         logger.info("Enabling notifications steerer")
+        GLib.timeout_add_seconds(1, sendUpdate, self)
         
 
     def StopNotify(self):
@@ -219,11 +228,12 @@ class RxCharacteristic(Characteristic):
         self.service = service
 
     def WriteValue(self, value, options):
-        logger.debug("Unknown 5 Write: " + repr(value))
-        logger.info(value[0])
-        # TODO: get the tx characteristic with this self.service.characteristics[0]
         try:
-            if (value[0] == 0x03 and value[1] == 0x10):
+            logger.debug("Tx Write: " + repr(value))
+            logger.info(value[0])
+            # TODO: get the tx characteristic with this self.service.characteristics[0]
+        
+            if (value[0] == 0x10 and value[1] == 0x30):
                 logger.info('got it')
                 self.tx.PropertiesChanged(
                 GATT_CHRC_IFACE,
