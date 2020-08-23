@@ -82,6 +82,7 @@
 #include "nrf_sdh_ble.h"
 #include "nrf_sdh_soc.h"
 #include "peer_manager.h"
+#include "peer_manager_handler.h"
 #include "sensorsim.h"
 
 #define DEVICE_NAME                                                            \
@@ -282,7 +283,7 @@ static void notification_timeout_handler(void *p_context) {
   m_custom_value++;
 
   // err_code = ble_cus_tx_value_update(&m_cus, m_custom_value, 1);
-  // APP_ERROR_CHECK(err_code);
+  APP_ERROR_CHECK(err_code);
 }
 
 /**@brief Function for the Timer initialization.
@@ -848,8 +849,10 @@ int main(void) {
   ble_stack_init();
   gap_params_init();
   gatt_init();
+  NRF_LOG_INFO("HI KEITH");
   services_init();
   advertising_init();
+  
   conn_params_init();
   peer_manager_init();
 

@@ -328,11 +328,15 @@ uint32_t ble_cus_init(ble_cus_t *p_cus, const ble_cus_init_t *p_cus_init) {
 
   // Add Custom Service UUID
   ble_uuid128_t base_uuid = {STEERER_SERVICE_UUID_BASE};
+    NRF_LOG_INFO("uuid vs add define");
   err_code = sd_ble_uuid_vs_add(&base_uuid, &p_cus->uuid_type);
+    NRF_LOG_INFO("uuid vs added success %d", err_code);
   VERIFY_SUCCESS(err_code);
+    NRF_LOG_INFO("uuid vs add verifie");
 
   ble_uuid.type = p_cus->uuid_type;
   ble_uuid.uuid = STEERER_SERVICE_UUID;
+
 
   // Add the Custom Service
   err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &ble_uuid,
@@ -345,6 +349,8 @@ uint32_t ble_cus_init(ble_cus_t *p_cus, const ble_cus_init_t *p_cus_init) {
   custom_value_char_add(p_cus, p_cus_init);
   rx_char_add(p_cus, p_cus_init);
   tx_char_add(p_cus, p_cus_init);
+
+  return (NRF_SUCCESS);
 }
 
 uint32_t ble_cus_tx_value_update(ble_cus_t *p_cus, uint8_t *custom_value,
@@ -407,7 +413,7 @@ uint32_t ble_cus_steering_value_update(ble_cus_t *p_cus, float angle) {
 
   gatts_value.len = 4;
   gatts_value.offset = 0;
-  gatts_value.p_value = &angle;
+  gatts_value.p_value = (uint8_t *)&angle;
 
   // Update database.
   err_code = sd_ble_gatts_value_set(
