@@ -3141,7 +3141,7 @@
 // <e> NRFX_SAADC_ENABLED - nrfx_saadc - SAADC peripheral driver
 //==========================================================
 #ifndef NRFX_SAADC_ENABLED
-#define NRFX_SAADC_ENABLED 0
+#define NRFX_SAADC_ENABLED 1
 #endif
 // <o> NRFX_SAADC_CONFIG_RESOLUTION  - Resolution
  
@@ -3151,7 +3151,7 @@
 // <3=> 14 bit 
 
 #ifndef NRFX_SAADC_CONFIG_RESOLUTION
-#define NRFX_SAADC_CONFIG_RESOLUTION 1
+#define NRFX_SAADC_CONFIG_RESOLUTION 3
 #endif
 
 // <o> NRFX_SAADC_CONFIG_OVERSAMPLE  - Sample period
@@ -3167,7 +3167,7 @@
 // <8=> 256x 
 
 #ifndef NRFX_SAADC_CONFIG_OVERSAMPLE
-#define NRFX_SAADC_CONFIG_OVERSAMPLE 0
+#define NRFX_SAADC_CONFIG_OVERSAMPLE 8
 #endif
 
 // <q> NRFX_SAADC_CONFIG_LP_MODE  - Enabling low power mode
