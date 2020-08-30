@@ -85,6 +85,9 @@
 #include "peer_manager_handler.h"
 #include "sensorsim.h"
 
+#include "steer-adc.h"
+#include "nrf_delay.h"
+
 #define DEVICE_NAME                                                            \
   "Marl" /**< Name of device. Will be included in the advertising              \
                        data. */
@@ -128,7 +131,7 @@
   3 /**< Number of attempts before giving up the connection parameter          \
        negotiation. */
 
-#define NOTIFICATION_INTERVAL APP_TIMER_TICKS(1000)
+#define NOTIFICATION_INTERVAL APP_TIMER_TICKS(250)
 
 #define SEC_PARAM_BOND 1     /**< Perform bonding. */
 #define SEC_PARAM_MITM 0     /**< Man In The Middle protection not required. */
@@ -276,7 +279,7 @@ static float steerer_value = 0;
 static void notification_timeout_handler(void *p_context) {
   UNUSED_PARAMETER(p_context);
   ret_code_t err_code;
-  err_code = ble_cus_steering_value_update(&m_cus, steerer_value);
+  err_code = ble_cus_steering_value_update(&m_cus, get_angle());
   // APP_ERROR_CHECK(err_code);
 
   // Increment the value of m_custom_value before nortifing it.
@@ -846,10 +849,15 @@ int main(void) {
   APP_SCHED_INIT(8, 4);
   buttons_leds_init(&erase_bonds);
   power_management_init();
+
+  steering_init();
+  // steering_convert();
+
+
+
   ble_stack_init();
   gap_params_init();
   gatt_init();
-  NRF_LOG_INFO("HI KEITH");
   services_init();
   advertising_init();
   
@@ -866,6 +874,8 @@ int main(void) {
   for (;;) {
     idle_state_handle();
     app_sched_execute();
+    saadc_execute();
+    
   }
 }
 
