@@ -1,0 +1,7 @@
+cleaner.log
+cleanest.txt
+logs.log
+MyFile.txt
+parser/logs.log
+parser/parser.py
+parser/tester.py
