@@ -84,8 +84,8 @@
 #include "peer_manager.h"
 #include "sensorsim.h"
 
-#include "steer-adc.h"
 #include "nrf_delay.h"
+#include "steer-adc.h"
 
 #define DEVICE_NAME                                                            \
   "Marl" /**< Name of device. Will be included in the advertising              \
@@ -852,8 +852,6 @@ int main(void) {
   steering_init();
   // steering_convert();
 
-
-
   ble_stack_init();
   gap_params_init();
   gatt_init();
@@ -873,7 +871,6 @@ int main(void) {
     idle_state_handle();
     app_sched_execute();
     saadc_execute();
-    
   }
 }
 
