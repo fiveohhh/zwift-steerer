@@ -69,9 +69,11 @@ void steering_init(void)
 {
     NRF_LOG_INFO("steer init");
     ret_code_t err_code;
-    nrfx_saadc_config_t saadc_config;
-    saadc_config.resolution = NRF_SAADC_RESOLUTION_14BIT; //need to manually set the resolution or else it'll default to 8 bit
-    // saadc_config.oversample = NRF_SAADC_OVERSAMPLE_256X; // default is 4 sample over sampling so need to override that.
+    nrfx_saadc_config_t saadc_config = {
+        .resolution = (nrf_saadc_resolution_t)NRFX_SAADC_CONFIG_RESOLUTION,
+        .oversample = (nrf_saadc_oversample_t)NRFX_SAADC_CONFIG_OVERSAMPLE,
+        .interrupt_priority = NRFX_SAADC_CONFIG_IRQ_PRIORITY,
+        .low_power_mode = NRFX_SAADC_CONFIG_LP_MODE};
 
     err_code = nrfx_saadc_init(&saadc_config, saadc_callback);
     APP_ERROR_CHECK(err_code);
@@ -84,9 +86,6 @@ void steering_init(void)
 
     err_code = nrfx_saadc_buffer_convert(&m_buffer_pool[0], 1);
     APP_ERROR_CHECK(err_code);
-
-    // err_code = nrfx_saadc_buffer_convert(&m_buffer_pool[1], 1);
-    // APP_ERROR_CHECK(err_code);
 
     err_code = app_timer_create(&m_sampling_timer,APP_TIMER_MODE_REPEATED,sampling_timer_callback);
     APP_ERROR_CHECK(err_code);
@@ -126,19 +125,23 @@ void steering_display_value(void)
     NRF_LOG_INFO("read: %d, ",  sample);
 }
 
+#define MAX_STEER_ANGLE (35)
+
+// 14 bits
+#define MAX_ADC_RESOLUTION 16384
 
 float get_angle(void)
 {
     float steering_angle = 0;
-    if (m_buffer_pool[0] > 8500 || m_buffer_pool[0] < 7500)
-    {
-        steering_angle = (((m_buffer_pool[0])-8000)*0.0025);
-    }
-    else
-    {
-        steering_angle = 0;
-    }
 
+
+        steering_angle = ((m_buffer_pool[0]/(float)MAX_ADC_RESOLUTION) * (MAX_STEER_ANGLE * 2)) - MAX_STEER_ANGLE;
+  
+    if (fabsf(steering_angle) < 1)
+    {
+      steering_angle = 0;
+    }
+    
     return steering_angle;
     
 }
