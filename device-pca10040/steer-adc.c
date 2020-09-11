@@ -7,22 +7,19 @@
  */
 
 #include "steer-adc.h"
+#include "app_timer.h"
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
-#include "nrfx_saadc.h"
 #include "nrf_saadc.h"
-#include "app_timer.h"
+#include "nrfx_saadc.h"
 
 #define SAMPLING_INTERVAL APP_TIMER_TICKS(100)
 
 APP_TIMER_DEF(m_sampling_timer);
 
-
-
-
-static nrf_saadc_value_t     m_buffer_pool[2];
-int16_t sample = 0;
+static nrf_saadc_value_t m_buffer_pool[2];
+int16_t                  sample = 0;
 // static uint8_t rotation_count = 0;
 // static double angle_old;
 
@@ -34,11 +31,12 @@ bool flag_float_angle = false;
 // static uint32_t              m_adc_evt_counter;
 // nrf_saadc_value_t sample_sample;
 
-void saadc_callback(nrfx_saadc_evt_t const * p_event)
+void saadc_callback(nrfx_saadc_evt_t const *p_event)
 {
     // NRF_LOG_INFO("Callback");
     // ret_code_t err_code;
-    if (p_event->type == NRFX_SAADC_EVT_DONE)                                                        //Capture offset calibration complete event
+    if (p_event->type ==
+        NRFX_SAADC_EVT_DONE)  // Capture offset calibration complete event
     {
         converting = false;
         // ret_code_t err_code;
@@ -46,15 +44,14 @@ void saadc_callback(nrfx_saadc_evt_t const * p_event)
         // APP_ERROR_CHECK(err_code);
         // sample = p_event->data.done.p_buffer[0];
         // NRF_LOG_INFO("data: %d",m_buffer_pool[0]);
- 
     }
     else if (p_event->type == NRFX_SAADC_EVT_CALIBRATEDONE)
     {
-        //Nothing, not calibrating
+        // Nothing, not calibrating
     }
 }
 
-void sampling_timer_callback(void * p_context)
+void sampling_timer_callback(void *p_context)
 {
     flag_float_angle = true;
     ret_code_t err_code;
@@ -64,11 +61,10 @@ void sampling_timer_callback(void * p_context)
     APP_ERROR_CHECK(err_code);
 }
 
-
 void steering_init(void)
 {
     NRF_LOG_INFO("steer init");
-    ret_code_t err_code;
+    ret_code_t          err_code;
     nrfx_saadc_config_t saadc_config = {
         .resolution = (nrf_saadc_resolution_t)NRFX_SAADC_CONFIG_RESOLUTION,
         .oversample = (nrf_saadc_oversample_t)NRFX_SAADC_CONFIG_OVERSAMPLE,
@@ -78,8 +74,11 @@ void steering_init(void)
     err_code = nrfx_saadc_init(&saadc_config, saadc_callback);
     APP_ERROR_CHECK(err_code);
 
-    nrf_saadc_channel_config_t channel_config_steer = NRFX_SAADC_DEFAULT_CHANNEL_CONFIG_SE(NRF_SAADC_INPUT_AIN1);
-    channel_config_steer.gain = NRF_SAADC_GAIN1_5; // this is measured against either vdd/4 or vcore = 0.6v.
+    nrf_saadc_channel_config_t channel_config_steer =
+        NRFX_SAADC_DEFAULT_CHANNEL_CONFIG_SE(NRF_SAADC_INPUT_AIN1);
+    channel_config_steer.gain =
+        NRF_SAADC_GAIN1_5;  // this is measured against either vdd/4 or vcore =
+                            // 0.6v.
 
     nrfx_saadc_channel_init(0, &channel_config_steer);
     APP_ERROR_CHECK(err_code);
@@ -87,12 +86,12 @@ void steering_init(void)
     err_code = nrfx_saadc_buffer_convert(&m_buffer_pool[0], 1);
     APP_ERROR_CHECK(err_code);
 
-    err_code = app_timer_create(&m_sampling_timer,APP_TIMER_MODE_REPEATED,sampling_timer_callback);
+    err_code = app_timer_create(&m_sampling_timer, APP_TIMER_MODE_REPEATED,
+                                sampling_timer_callback);
     APP_ERROR_CHECK(err_code);
 
     err_code = app_timer_start(m_sampling_timer, SAMPLING_INTERVAL, NULL);
     APP_ERROR_CHECK(err_code);
-
 }
 
 void steering_convert(void)
@@ -104,7 +103,6 @@ void steering_convert(void)
     // err_code = nrfx_saadc_sample_convert(0, &duckman);
     APP_ERROR_CHECK(err_code);
     // NRF_LOG_INFO("Value: %d", duckman);
-    
 }
 
 // void mpos_test_convert_event_activate(void)
@@ -116,14 +114,10 @@ void steering_convert(void)
 //     {
 //         NRF_LOG_ERROR("fuck sake \r\n");
 //     }
-    
-    
+
 // }
 
-void steering_display_value(void)
-{
-    NRF_LOG_INFO("read: %d, ",  sample);
-}
+void steering_display_value(void) { NRF_LOG_INFO("read: %d, ", sample); }
 
 #define MAX_STEER_ANGLE (35)
 
@@ -134,16 +128,16 @@ float get_angle(void)
 {
     float steering_angle = 0;
 
+    steering_angle = ((m_buffer_pool[0] / (float)MAX_ADC_RESOLUTION) *
+                      (MAX_STEER_ANGLE * 2)) -
+                     MAX_STEER_ANGLE;
 
-        steering_angle = ((m_buffer_pool[0]/(float)MAX_ADC_RESOLUTION) * (MAX_STEER_ANGLE * 2)) - MAX_STEER_ANGLE;
-  
     if (fabsf(steering_angle) < 1)
     {
-      steering_angle = 0;
+        steering_angle = 0;
     }
-    
+
     return steering_angle;
-    
 }
 
 void saadc_execute(void)
@@ -153,6 +147,6 @@ void saadc_execute(void)
         flag_float_angle = false;
         float angle = get_angle();
         // NRF_LOG_INFO("data: %d",);
-        NRF_LOG_INFO( "Float " NRF_LOG_FLOAT_MARKER "", NRF_LOG_FLOAT(angle));
+        NRF_LOG_INFO("Float " NRF_LOG_FLOAT_MARKER "", NRF_LOG_FLOAT(angle));
     }
 }
