@@ -32,6 +32,11 @@ bool flag_float_angle = false;
 
 // 14 bits
 #define MAX_ADC_RESOLUTION 16384
+
+#ifdef BOARD_PCA10040
+#define STEERER_PIN NRF_SAADC_INPUT_AIN1
+#endif
+
 void saadc_callback(nrfx_saadc_evt_t const *p_event)
 {
     if (p_event->type ==
@@ -69,7 +74,7 @@ void steering_init(void)
     APP_ERROR_CHECK(err_code);
 
     nrf_saadc_channel_config_t channel_config_steer =
-        NRFX_SAADC_DEFAULT_CHANNEL_CONFIG_SE(NRF_SAADC_INPUT_AIN1);
+        NRFX_SAADC_DEFAULT_CHANNEL_CONFIG_SE(STEERER_PIN);
     channel_config_steer.gain =
         NRF_SAADC_GAIN1_5;  // this is measured against either vdd/4 or vcore =
                             // 0.6v.
