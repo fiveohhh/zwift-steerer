@@ -306,6 +306,8 @@ static void notification_timeout_handler(void *p_context)
 {
     UNUSED_PARAMETER(p_context);
     ret_code_t err_code;
+    float      angle = get_angle();
+    NRF_LOG_INFO("Float " NRF_LOG_FLOAT_MARKER "", NRF_LOG_FLOAT(angle));
     err_code = ble_cus_steering_value_update(&m_cus, get_angle());
     // APP_ERROR_CHECK(err_code);
 
@@ -943,7 +945,6 @@ int main(void)
     {
         idle_state_handle();
         app_sched_execute();
-        saadc_execute();
     }
 }
 

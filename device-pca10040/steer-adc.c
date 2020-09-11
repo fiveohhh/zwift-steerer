@@ -20,30 +20,24 @@ APP_TIMER_DEF(m_sampling_timer);
 
 static nrf_saadc_value_t m_buffer_pool[2];
 int16_t                  sample = 0;
-// static uint8_t rotation_count = 0;
-// static double angle_old;
 
 bool converting = false;
 bool flag_float_angle = false;
 
-// static nrf_saadc_value_t     m_buffer_pool_cos;
-// static nrf_saadc_Valu
-// static uint32_t              m_adc_evt_counter;
-// nrf_saadc_value_t sample_sample;
+// Max amount of turn allowed
+#define MAX_STEER_ANGLE (35)
 
+// used to make sure we don't move around when we're close to center of joystick
+#define ZERO_FLOOR 2
+
+// 14 bits
+#define MAX_ADC_RESOLUTION 16384
 void saadc_callback(nrfx_saadc_evt_t const *p_event)
 {
-    // NRF_LOG_INFO("Callback");
-    // ret_code_t err_code;
     if (p_event->type ==
         NRFX_SAADC_EVT_DONE)  // Capture offset calibration complete event
     {
         converting = false;
-        // ret_code_t err_code;
-        // err_code = nrfx_saadc_buffer_convert(p_event->data.done.p_buffer, 1);
-        // APP_ERROR_CHECK(err_code);
-        // sample = p_event->data.done.p_buffer[0];
-        // NRF_LOG_INFO("data: %d",m_buffer_pool[0]);
     }
     else if (p_event->type == NRFX_SAADC_EVT_CALIBRATEDONE)
     {
@@ -97,33 +91,14 @@ void steering_init(void)
 void steering_convert(void)
 {
     ret_code_t err_code;
-    // nrf_saadc_value_t duckman;
     converting = true;
     err_code = nrfx_saadc_sample();
-    // err_code = nrfx_saadc_sample_convert(0, &duckman);
     APP_ERROR_CHECK(err_code);
-    // NRF_LOG_INFO("Value: %d", duckman);
 }
-
-// void mpos_test_convert_event_activate(void)
-// {
-//     ret_code_t err_code;
-//     err_code = nrfx_saadc_sample();
-//     APP_ERROR_CHECK(err_code);
-//     if (err_code == NRFX_ERROR_INVALID_STATE)
-//     {
-//         NRF_LOG_ERROR("fuck sake \r\n");
-//     }
-
-// }
 
 void steering_display_value(void) { NRF_LOG_INFO("read: %d, ", sample); }
 
-#define MAX_STEER_ANGLE (35)
-
-// 14 bits
-#define MAX_ADC_RESOLUTION 16384
-
+//
 float get_angle(void)
 {
     float steering_angle = 0;
@@ -132,21 +107,10 @@ float get_angle(void)
                       (MAX_STEER_ANGLE * 2)) -
                      MAX_STEER_ANGLE;
 
-    if (fabsf(steering_angle) < 1)
+    if (fabsf(steering_angle) < ZERO_FLOOR)
     {
         steering_angle = 0;
     }
 
     return steering_angle;
-}
-
-void saadc_execute(void)
-{
-    if (flag_float_angle)
-    {
-        flag_float_angle = false;
-        float angle = get_angle();
-        // NRF_LOG_INFO("data: %d",);
-        NRF_LOG_INFO("Float " NRF_LOG_FLOAT_MARKER "", NRF_LOG_FLOAT(angle));
-    }
 }

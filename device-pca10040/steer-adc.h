@@ -20,18 +20,18 @@
 extern "C"
 {
 #endif
-
-    void saadc_callback(nrfx_saadc_evt_t const *p_event);
-
+    /**
+     * @brief Init the steer module
+     *
+     */
     void steering_init(void);
 
-    void steering_convert(void);
-
-    void steering_display_value(void);
-
+    /**
+     * @brief Get the angle of the joystick
+     *
+     * @return float angle of joystick
+     */
     float get_angle(void);
-
-    void saadc_execute(void);
 
 #ifdef __cplusplus
 }
