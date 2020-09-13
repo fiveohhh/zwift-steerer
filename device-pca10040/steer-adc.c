@@ -24,17 +24,23 @@ int16_t                  sample = 0;
 bool converting = false;
 bool flag_float_angle = false;
 
+// Set to true to zero out the steerer with the next adc reading
+bool    zero_out = true;
+int32_t zero_offset = 0;
+
 // Max amount of turn allowed
 #define MAX_STEER_ANGLE (35)
 
 // used to make sure we don't move around when we're close to center of joystick
-#define ZERO_FLOOR 2
+#define ZERO_FLOOR 1
 
 // 14 bits
 #define MAX_ADC_RESOLUTION 16384
 
 #ifdef BOARD_PCA10040
-#define STEERER_PIN NRF_SAADC_INPUT_AIN1
+#define STEERER_PIN NRF_SAADC_INPUT_AIN0
+#elif BOARD_PCA10059
+#define STEERER_PIN NRF_SAADC_INPUT_AIN7
 #endif
 
 void saadc_callback(nrfx_saadc_evt_t const *p_event)
@@ -43,6 +49,13 @@ void saadc_callback(nrfx_saadc_evt_t const *p_event)
         NRFX_SAADC_EVT_DONE)  // Capture offset calibration complete event
     {
         converting = false;
+        if (zero_out)
+        {
+            zero_out = false;
+
+            zero_offset = (MAX_ADC_RESOLUTION / 2) - m_buffer_pool[0];
+            NRF_LOG_INFO("Zero %d %d", m_buffer_pool[0], zero_offset);
+        }
     }
     else if (p_event->type == NRFX_SAADC_EVT_CALIBRATEDONE)
     {
@@ -65,7 +78,7 @@ void steering_init(void)
     NRF_LOG_INFO("steer init");
     ret_code_t          err_code;
     nrfx_saadc_config_t saadc_config = {
-        .resolution = (nrf_saadc_resolution_t)NRFX_SAADC_CONFIG_RESOLUTION,
+        .resolution = (nrf_saadc_resolution_t)NRF_SAADC_RESOLUTION_14BIT,
         .oversample = (nrf_saadc_oversample_t)NRFX_SAADC_CONFIG_OVERSAMPLE,
         .interrupt_priority = NRFX_SAADC_CONFIG_IRQ_PRIORITY,
         .low_power_mode = NRFX_SAADC_CONFIG_LP_MODE};
@@ -108,9 +121,10 @@ float get_angle(void)
 {
     float steering_angle = 0;
 
-    steering_angle = ((m_buffer_pool[0] / (float)MAX_ADC_RESOLUTION) *
-                      (MAX_STEER_ANGLE * 2)) -
-                     MAX_STEER_ANGLE;
+    steering_angle =
+        (((m_buffer_pool[0] + zero_offset) / (float)MAX_ADC_RESOLUTION) *
+         (MAX_STEER_ANGLE * 2)) -
+        MAX_STEER_ANGLE;
 
     if (fabsf(steering_angle) < ZERO_FLOOR)
     {
